@@ -1,0 +1,155 @@
+{% load static %}
+<!DOCTYPE html>
+<html>
+    <head>
+        <title>
+            This is home page
+        </title>
+        <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+        
+        </script>
+
+    </head>
+    <body>
+        <form action="" method="post">
+            {% csrf_token %}
+            <input type="hidden" name="queid" id="queid"/>
+            {{form.as_p}}
+            
+            <button type="submit" id="btnsave">Submit</button>
+            
+        </form>
+
+
+        <ul id="que-list">
+            {% for q in questions %}
+                <li>
+                    <h3>
+                        {{q.question}}
+                    </h3>
+                    <p>
+                        {{q.answer}}
+                    </p>
+                    <input type="button" data-qid="{{q.id}}"
+                    class="btn-edit" value="Edit"/>
+                    <input type="button" data-qid="{{q.id}}"
+                    class="btn-del"
+                    value="Delete"/>
+                </li>
+
+            {% endfor %}
+        </ul>
+        
+        
+        <script>
+
+            //create
+            $("#btnsave").click(function(){
+                console.log("Save button clicked");
+                output = "";
+
+                let quesid = $("#queid").val();
+                let que = $("#id_question").val();
+                let ans = $("#id_answer").val();
+                let csr = $("input[name=csrfmiddlewaretoken]").val();
+
+                que_data = {queid:quesid,question:que, answer:ans,csrfmiddlewaretoken:csr}
+
+                console.log(que_data);
+                console.log(csr);
+
+                $.ajax({
+                    url:"{% url 'save' %}",
+                    method:"POST",
+                    data:que_data,
+                    dataType:"json",
+
+                    success:function(data){
+                        console.log("data saved");
+                        x = data.question_data
+                    console.log(x.length);
+
+                    if(data.status == 'Save'){
+                        console.log("data saved again");
+                        for(i=0; i<x.length;i++){
+                            console.log(x[i].question);
+                            output += '<li><h3>' + x[i].question + '</h3><p>'+x[i].answer+'</p></li><input type="button" class="btn btn-edit" value="Edit" data-sid='+x[i].id+"><input type='button' class='btn btn-del' value='Delete' data-sid="+x[i].id+">"
+                        }
+                        $("#que-list").html(output) ;
+                        $("#queid").val("");
+                        $("form")[0].reset();
+                        location.reload();
+                    }
+
+                    if(data.status ==0){
+                        console.log("Unable to save form");
+                        
+                        $("form")[0].reset();
+                        location.reload();
+                    
+                    }
+                    }
+                });
+
+
+            });
+
+           
+        //delete data
+        $(document).on("click",".btn-del",function(){
+            console.log("Delete Button Clicked");
+            let id = $(this).attr("data-qid");
+            let csr = $("input[name=csrfmiddlewaretoken]").val();
+
+            console.log(id);
+            mydata = {qid:id,csrfmiddlewaretoken:csr};
+            console.log(mydata);
+            mythis = this;
+
+            $.ajax({
+                url:"{%url 'delete' %}",
+                method:"POST",
+                data:mydata,
+                success:function(data){
+                    if(data.status==1){
+                        console.log("Data Deleted Successfully");
+                        location.reload();
+                    }
+                    if(data.status == 0){
+                        console.log("Unable to delete data");
+                    }
+                },
+            });
+
+        });
+
+        //editing
+        $(document).on('click','.btn-edit',function(){
+            console.log("Edit button clicked");
+            let id = $(this).attr("data-qid");
+            let csr = $("input[name=csrfmiddlewaretoken]").val()
+
+            console.log(id)
+            mydata = {qid:id,csrfmiddlewaretoken:csr};
+            console.log(mydata);
+
+            $.ajax({
+                url:"{%url 'edit'%}",
+                method:"POST",
+                data:mydata,
+                dataType:"json",
+                success:function(data){
+                    console.log(data);
+                     $("#queid").val(data.id);
+                     $("#id_question").val(data.question);
+                     $("#id_answer").val(data.answer);
+
+                },
+            });
+        });
+
+
+        </script>
+
+    </body>
+</html>
